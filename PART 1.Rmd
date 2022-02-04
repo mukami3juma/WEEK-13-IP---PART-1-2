@@ -1,0 +1,532 @@
+---
+title: "PART 1"
+author: "Rachel Juma"
+date: "2/2/2022"
+output: html_document
+---
+## 1.) Defining the Question
+
+Identify which individuals are most likely to click on cryptography course ads.
+
+## 2.) The metric for success
+
+Variables that influence clicking of an ad.
+
+## 3.) Context
+
+The term social media marketing (SMM) refers to the use of social media and social networks to market a company's products and services. Social media marketing provides companies and or entrepreneurs with a way to engage with existing customers and reach new ones while allowing them to promote their desired culture, mission, or tone.
+
+## 4.) Experimental Design
+
+- Find and deal with outliers, anomalies, and missing data within the dataset.
+- Perform  univariate and bivariate analysis and modeling.
+- From your insights provide a conclusion and recommendation.
+
+## 5.) Data Appropriateness
+
+The data is somewhat inefficient as some variables have no description. However, it still enables the problem to be solved.
+
+## 6.) Reading and Checking Data
+
+```{r}
+# install.packages('data.table')
+library(data.table)
+data <- fread('http://bit.ly/IPAdvertisingData')
+# we'll then print it
+head(data)     # Preview the data
+dim(data)      # shows the size of the data
+class(data)    
+names(data)    # Determine variable names
+
+# Renaming the columns
+names(data) <- c("Daily_Time_Spent_on_Site","Age","Area_Income","Daily_Internet_Usage","Ad_Topic_Line","City","Male","Country","Timestamp","Clicked_on_Ad")
+names(data)
+head(data) # dataset with renamed columns
+```
+The dataset has 1000 observations and 10 variables.
+
+## 7.) Data Cleaning
+
+### 7.1) Checking for datatypes
+```{r}
+str(data)
+
+data$Clicked_on_Ad <- as.factor(data$Clicked_on_Ad)
+data$Male <- as.factor(data$Male)
+str(data)
+```
+The dataset contains 3 num, 3 int, 3 chr and 1 POSIXct variable datatypes. Changed the target variable Clicked_on_Ad and Male datatypes to factor(categorical) from integer.
+
+
+### 7.2.) Checking for missing values
+```{r}
+colSums(is.na(data))
+```
+Dataset has no missing values.
+
+ 
+### 7.3.) Checking for Outliers
+```{r}
+
+# Using boxplot to check for outliers of numerical variables
+boxplot(data$Daily_Time_Spent_on_Site)
+
+boxplot(data$Age)
+
+boxplot(data$Area_Income) # there is presence of outliers
+
+boxplot(data$Daily_Internet_Usage)
+
+# Using unique function we check for anomalies in the categorical variables.
+unique_Male <- unique(data$Male)
+unique_Male
+
+unique_Ads <- unique(data$Clicked_on_Ad)
+unique_Ads
+```
+The categorical variables are binary, have only two outcomes, 0 or 1.
+
+### 7.4.) Checking for Duplicate values
+```{r}
+# determining duplicated values
+duplicate_data <- data[duplicated(data), ]
+duplicate_data
+
+# removing duplicates
+unique_data <- unique(data)
+unique_data
+```
+ The dataset has 0 duplicated rows and 1000 unique rows.
+
+## 8.) Exploratory Data Analysis
+
+### 8.1.) Univariate
+```{r}
+# Plotting bar graphs for categorical variables
+
+# 1. Male Gender
+Male_data <- data$Male
+Malefreq_data <- table(Male_data)
+barplot(Malefreq_data)
+``` 
+
+0 refers to females while 1 refers to males. There are more females compared to males in the dataset.
+
+```{r}
+# 2. Ad click status frequency distribution
+Clicked_on_Ad_data <- data$Clicked_on_Ad
+
+Clicked_on_Adfreq_data <- table(Clicked_on_Ad_data)
+Clicked_on_Adfreq_data
+
+barplot(Clicked_on_Adfreq_data)
+```
+ 
+There's an equal number of clicked on ads and those that are not clicked on.
+
+```{r}
+# 3. A histogram showing the distribution of Ages in the dataset
+
+Age_data <- data$Age
+
+Agefreq_data <- table(Age_data)
+
+hist(Agefreq_data)
+```
+
+People of ages 0-40 are the most recurring in the dataset while those above 40 are the least recurring.
+
+```{r}
+# 4. A boxplot showing the distribution of Daily Time Spent on Site in the dataset
+
+boxplot(data$Daily_Time_Spent_on_Site)
+
+# checking quantiles of the variable
+
+Daily_Time_Spent_on_Site_quantile <- quantile(data$Daily_Time_Spent_on_Site)
+
+Daily_Time_Spent_on_Site_quantile
+```
+
+Most people visiting the site daily spend roughly 51 to 68.2150 minutes while a lower number spends above 68.2150 upto 91.4300. The variable also does not follow normal distribution and is left/negatively skewed. This is because the median is closer to the top of the box, and if the whisker is shorter on the upper end of the box, then the distribution is negatively skewed (skewed left).
+
+```{r}
+# 5. A boxplot showing the distribution of Area_Income in the dataset
+
+boxplot(data$Area_Income)
+
+# checking quantiles of the variable
+
+Area_Income.quantile <- quantile(data$Area_Income)
+
+Area_Income.quantile
+```
+
+There are some outliers in this variable. The distribution also is negatively skewed. Most site visitors earn between 13996.5 and 57012.3 while the rest earn above the latter upto 79484.8.
+
+```{r}
+# 5. A boxplot showing the distribution of daily internet usage in the dataset
+
+boxplot(data$Daily_Internet_Usage)
+
+# checking quantiles of the variable
+
+Daily_Internet_Usage.quantile <- quantile(data$Daily_Internet_Usage)
+
+Daily_Internet_Usage.quantile
+```
+
+The distribution is negatively skewed. The higher number of people visiting the site daily use 104.78 to 183.1300 while the rest who are fewer use above 183.1300 upto 269.9600.
+
+
+### 8.2.) Bivariate
+```{r}
+# a.) Between two categorical variables.
+library(ggplot2)
+ggplot(data, aes(x = Clicked_on_Ad, fill = Male )) + 
+   geom_bar(position = "dodge")
+```
+
+Under people who Clicked on ad, there was an equal distribution of both male and female. For ad not clicked, there were more female clickers than men.
+
+```{r}
+# b.) Using Male Category
+
+# Using bar charts to show the relationship between the Male and other independent variables.
+
+library(ggplot2);
+ggplot(data, aes(Male, Daily_Time_Spent_on_Site)) +
+    geom_bar(stat = "identity") + 
+    labs(y = "Daily Time Spent on Site", x = "Male")
+```
+
+Females spend more time on the site compared to the males.
+```{r}
+# c.) Using Clicks on Ad category
+# Using bar charts to show the relationship between the target and other independent variables.
+
+library(ggplot2);
+ggplot(data, aes(Clicked_on_Ad, Daily_Time_Spent_on_Site)) +
+    geom_bar(stat = "identity") + 
+    labs(y = "Daily Time Spent on Site", x = "Clicked on Ad")
+```
+
+People who did not click on the add spent more time on the site compared to those who clicked.
+
+```{r}
+ggplot(data, aes(Clicked_on_Ad, Area_Income)) +
+    geom_bar(stat = "identity") + 
+    labs(y = "Area Income", x = "Clicked on Ad")
+```
+
+The higher the area income the lower the clicked ads and vice versa.
+
+```{r}
+ggplot(data, aes(Clicked_on_Ad,Age))+
+  geom_bar(stat = 'identity') + 
+  labs(y = "Age", x = "Clicked on Ad")
+```
+
+Larger summation age for people who did not click ads compared to those who did.
+
+```{r}
+ggplot(data, aes(Clicked_on_Ad, Daily_Internet_Usage)) +
+    geom_bar(stat = "identity") + 
+    labs(y = "Daily Internet Usage", x = "Clicked on Ad")
+```
+
+
+High internet usage does not necessarily mean more clicks.
+
+```{r}
+ggplot(data, aes(Male, Area_Income)) +
+    geom_bar(stat = "identity") + 
+    labs(y = "Area Income", x = "Male")
+```
+
+
+Males have lower area income compared to non-males.
+
+```{r}
+ggplot(data, aes(Male, Age)) +
+    geom_bar(stat = "identity") + 
+    labs(y = "Age", x = "Male")
+```
+
+
+Females have a higher cummulative age compared to men. 
+
+```{r}
+ggplot(data, aes(Male, Daily_Internet_Usage)) +
+    geom_bar(stat = "identity") + 
+    labs(y = "Daily Internet Usage", x = "Male")
+```
+
+Males use less internet compared to Females.
+
+```{r}
+# Scatterplot for 2 continous variables.
+
+ggplot(data, 
+       aes(x = Daily_Time_Spent_on_Site, 
+           y = Area_Income)) +
+  geom_point()
+
+cor(data$Area_Income,data$Daily_Time_Spent_on_Site)
+```
+
+
+correlation is 0.3109544 showing a positive relationship between the above variables. A change in time spent on the site leads to an increase in area income or viceversa.
+
+```{r}
+ggplot(data, 
+       aes(x = Area_Income, 
+           y = Age)) +
+  geom_point()
+  
+cor(data$Area_Income,data$Age)
+```
+
+
+Correlation is -0.182605 showing a weak negative relationship between the above variables. Lower ages experience higher area income as they are tech savvy and use online platforms to make money.
+
+```{r}
+ggplot(data, 
+       aes(x = Daily_Time_Spent_on_Site, 
+           y = Age)) +
+  geom_point()
+
+cor(data$Age,data$Daily_Time_Spent_on_Site)
+```
+
+
+Correlation is -0.3315133 showing a negative relationship between age and daily time spent on the site because younger people spend more time on the site unlike older people.
+
+```{r}
+ggplot(data, 
+       aes(x = Daily_Internet_Usage, 
+           y = Age)) +
+  geom_point()
+
+cor(data$Age,data$Daily_Internet_Usage)
+```
+
+
+Correlation is -0.3672086 showing a negative relationship between age and daily internet usage because younger people spend more time on the site hence using more internet unlike older people.
+
+```{r}
+ggplot(data, 
+       aes(x = Daily_Internet_Usage, 
+           y = Daily_Time_Spent_on_Site)) +
+  geom_point()
+
+cor(data$Daily_Time_Spent_on_Site,data$Daily_Internet_Usage)
+```
+
+
+Correlation is 0.5186585 showing a strong positive relationship between the above variables obviously because more time on the site results in more internet usage.
+
+```{r}
+ggplot(data, 
+       aes(x = Daily_Internet_Usage, 
+           y = Area_Income)) +
+  geom_point()
+
+cor(data$Area_Income,data$Daily_Internet_Usage)
+```
+
+
+Correlation is 0.3374955 showing a positive relationship between the above variables obviously because more area income results in more people being able to afford internet leading to more usage.
+
+
+## 9. Modeling
+### A.) KNN
+Note that, the ‘Clicked_on_ad’ variable is our target variable. The value of clicked on ad variable represents whether a person will click on ad or not.
+We will then normalize the features to avoid biasedness.
+```{r}
+
+data <- fread('http://bit.ly/IPAdvertisingData')
+# Renaming the columns
+names(data) <- c("Daily_Time_Spent_on_Site","Age","Area_Income","Daily_Internet_Usage","Ad_Topic_Line","City","Male","Country","Timestamp","Clicked_on_Ad")
+# checking data
+str(data)
+head(data)
+summary(data)
+```
+```{r}
+library(caret)
+# new dataframe with dropped character features i.e Ad_Topic_Line,City, Country,Timestamp(datetime)
+data1 = subset(data, select = -c(Ad_Topic_Line,City, Country, Timestamp))
+
+head(data1) #checking new dataset
+str(data1)
+names(data1)
+data1$Clicked_on_Ad <- factor(data$Clicked_on_Ad)
+str(data1)
+
+# Data partition
+set.seed(234)
+sam <- sample(2,nrow(data1),replace=T,prob=c(0.7,0.3))
+
+train<-data1[sam == 1,]
+test<-data1[sam == 2,]
+
+# modeling
+trControl <- trainControl(method="repeatedcv",
+                          number = 5,
+                          repeats = 4)
+
+set.seed(42)
+knn <- train(Clicked_on_Ad~.,data = train,method ="knn",tuneLength = 20, trControl = trControl,preProc=c("center","scale")) # data here is standardized
+knn
+varImp(knn) # shows features in order of importance
+
+# prediction
+pred <- predict(knn,test)
+pred
+
+cm <- confusionMatrix(pred,test$Clicked_on_Ad)
+cm
+```
+ 
+- Daily internet usage and daily time spent on site have the highest importance in predicting whether an ad is clicked or not.
+
+- The model is 95.8% accurate predicting only 11 samples wrongly. 
+
+- Accuracy was used to select the optimal model using the largest value.
+The final value used for the model was k = 37.
+
+### B.) Decision Tree
+```{r}
+library(data.table)
+df <- fread('http://bit.ly/IPAdvertisingData')
+# Renaming the columns
+names(df) <- c("Daily_Time_Spent_on_Site","Age","Area_Income","Daily_Internet_Usage","Ad_Topic_Line","City","Male","Country","Timestamp","Clicked_on_Ad")
+
+# converting Clicked on ad to category
+df$Clicked_on_Ad <- as.factor(df$Clicked_on_Ad)
+
+# checking data
+str(df)
+head(df)
+
+# dropping character and datetime variables
+df = subset(df, select = -c(Ad_Topic_Line,City,Country,Timestamp))
+head(df)
+names(df)
+
+# partitioning data into train and test
+
+library(rpart)
+set.seed(42)
+df.sample <- sample(2,nrow(df),replace =TRUE, prob=c(0.7,0.3))
+train <-df[df.sample==1,]
+test <- df[df.sample==2,]
+
+# decision tree model using rpart
+
+tree <- rpart(Clicked_on_Ad~.,train)
+
+install.packages("rpart.plot")
+library(rpart.plot)
+rpart.plot(tree)
+
+```
+
+Most important feature to ensure click on ad is daily internet usage. 
+-When the latter is < 178, there's a 49% chance of clicking an ad(92% of its total sample clicked on ad). 
+-When daily internet usage is <178 and daily time spent on site is <74,there's 42% chance of clicking on an ad(99% of its total sample clicked on ad). 
+-When daily internet usage is <178 and daily time spent on site >=74 and daily internet usage is <161, there's a 3% chance of clicking on ad(82% of its total sample clicked on ad).
+-When daily internet usage is >=178 and daily time spent on site is >=48, there's a 3% chance of clicking on ad(100% of its total sample clicked on ad).
+
+```{r}
+# Prediction, Remember:
+
+test <- df[df.sample==2,]
+head(test)
+dim(test)
+
+# Showing the probabilities of the model classifying all the inputs to both classes 0 and 1.
+
+test_pred <- predict(tree,test,type="class")
+test_pred
+
+# Confusion matrix to check for accuracy of the model
+
+install.packages("ggplot2")
+library(caret)
+length(test_pred)
+confusionMatrix(table(test_pred,test$Clicked_on_Ad))
+```
+The decision tree is 93.52% accurate classifying 274/293 samples correctly.
+
+### C. Support Vector Machine
+
+```{r}
+head(df)
+str(df)
+# viewing how the below variables cluster
+library(ggplot2)
+qplot(Daily_Time_Spent_on_Site,Age, data=df,color=Clicked_on_Ad)
+
+# Using the sample split from above, we'll create SVM model
+head(train)
+head(test)
+dim(train)
+dim(test)
+summary(df)
+svm <- train(Clicked_on_Ad ~., data = train, method = "svmLinear")
+svm
+
+# optimizing model
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+
+svm1 <- train(Clicked_on_Ad ~., data = train, method = "svmLinear",
+trControl=trctrl,
+preProcess = c("center", "scale"),
+tuneLength = 10)
+svm1
+
+# Prediction
+pred <- predict(svm,test)
+pred
+pred1 <- predict(svm1,test)
+pred1
+library(caret)
+confusionMatrix(table(pred,test$Clicked_on_Ad))
+confusionMatrix(table(pred1,test$Clicked_on_Ad))
+```
+
+Accuracy is 96.93% and doesn't change after optimization. It predicts 284 out of 293 samples correctly.
+
+### D. Naive Bayes
+
+```{r}
+# Splitting data into training and test data sets. We will use partitions from previous decision tree model.
+head(train)
+head(test)
+
+library(e1071) #for naive bayes model
+
+nb <- naiveBayes(Clicked_on_Ad~.,data=train)
+print(nb) # notice there's almost equal percentages of people that click on an ad and those who don't at 49.9% for class0 and 50% for class 1.
+library(dplyr)
+library(rpart)
+library(ggplot2)
+library(caret)
+# Prediction
+Pred <- predict(nb,test)
+Pred
+# checking for model's accuracy
+confusionMatrix(Pred, test$Clicked_on_Ad )
+cbind(Pred,test) #showing predictions on test data
+```
+
+The model has 96.25% accuracy correctly classifying 282 out of 293 people correctly.
+
+## 10. Conclusion and Recommendation
+- The support vector machine is the best performer in terms of accuracy(96.93%) while decision tree performs the worst at 93.52%.
+
+- The entrepreneur should focus more on people who spend less time on the site(<178) and use less internet(<74).
+
+- They should also consider older people as they have shown to bring forth more clicks than the younger ones.
